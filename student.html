@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Student Dashboard</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#f4f6f9;
+}
+
+h2{
+    text-align:center;
+}
+
+.container{
+    width:90%;
+    margin:auto;
+}
+
+.card{
+    background:white;
+    padding:15px;
+    margin:10px 0;
+    border-radius:10px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+button{
+    padding:10px;
+    margin-top:10px;
+    width:100%;
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1e40af;
+}
+
+video{
+    width:100%;
+    border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<script src="app.js"></script>
+<script>checkLogin("student");</script>
+
+<h2>🎓 STUDENT DASHBOARD</h2>
+
+<div class="container">
+
+<div id="videoList"></div>
+<div id="noteList"></div>
+<div id="assignList"></div>
+
+</div>
+
+<script>
+
+/* =========================
+   GLOBAL QUIZ STATE
+========================= */
+let quizIndex = 0;
+let score = 0;
+let quizData = [];
+let answered = false;
+
+/* =========================
+   LOAD VIDEOS
+========================= */
+function loadVideos(){
+
+    let v = JSON.parse(localStorage.getItem("videos")) || [];
+    let b = document.getElementById("videoList");
+
+    b.innerHTML = "<div class='card'><h3>📹 Videos</h3></div>";
+
+    v.forEach(x=>{
+        b.innerHTML += `
+        <div class="card">
+            <h4>${x.title}</h4>
+            <video controls>
+                <source src="${x.file}">
+            </video>
+        </div>`;
+    });
+}
+
+/* =========================
+   LOAD NOTES
+========================= */
+function loadNotes(){
+
+    let n = JSON.parse(localStorage.getItem("notes")) || [];
+    let b = document.getElementById("noteList");
+
+    b.innerHTML = "<div class='card'><h3>📚 Notes</h3></div>";
+
+    n.forEach(x=>{
+        b.innerHTML += `
+        <div class="card">
+            <h4>${x.title}</h4>
+            <button onclick="preview('${x.file}')">Preview</button>
+            <a href="${x.file}" download="${x.name}">Download</a>
+        </div>`;
+    });
+}
+
+/* =========================
+   FIX PREVIEW (NO DOWNLOAD)
+========================= */
+function preview(file){
+
+    let win = window.open("");
+
+    win.document.write(`
+        <iframe src="${file}"
+        style="width:100%;height:100vh;border:none;"></iframe>
+    `);
+}
+
+/* =========================
+   LOAD ASSIGNMENTS
+========================= */
+function loadAssignments(){
+
+    let a = JSON.parse(localStorage.getItem("assignments")) || [];
+    let b = document.getElementById("assignList");
+
+    b.innerHTML = "<div class='card'><h3>📝 Assignments</h3></div>";
+
+    quizData = [];
+
+    a.forEach((x,i)=>{
+
+        // WRITTEN
+        if(x.type === "written"){
+
+            b.innerHTML += `
+            <div class="card">
+                <h4>${x.title}</h4>
+                <input type="file" id="f${i}">
+                <button onclick="submit(${i})">Submit</button>
+            </div>`;
+        }
+
+        // MCQ (store for exam mode)
+        if(x.type === "mcq"){
+            quizData.push(x);
+        }
+    });
+
+    if(quizData.length > 0){
+        startQuiz();
+    }
+}
+
+/* =========================
+   WRITTEN SUBMISSION
+========================= */
+function submit(i){
+
+    let file = document.getElementById("f"+i).files[0];
+
+    if(!file){
+        alert("Select file first");
+        return;
+    }
+
+    let reader = new FileReader();
+
+    reader.onload = e=>{
+
+        let s = JSON.parse(localStorage.getItem("submissions")) || [];
+
+        s.push({
+            file:e.target.result,
+            name:file.name
+        });
+
+        localStorage.setItem("submissions",JSON.stringify(s));
+
+        alert("Submitted successfully");
+    };
+
+    reader.readAsDataURL(file);
+}
+
+/* =========================
+   QUIZ START
+========================= */
+function startQuiz(){
+
+    quizIndex = 0;
+    score = 0;
+    answered = false;
+
+    showQuestion();
+}
+
+/* =========================
+   SHOW QUESTION
+========================= */
+function showQuestion(){
+
+    answered = false;
+
+    let b = document.getElementById("assignList");
+    let q = quizData[quizIndex];
+
+    b.innerHTML = `
+        <div class="card">
+            <h3>Question ${quizIndex + 1}</h3>
+
+            <p>${q.question}</p>
+
+            <label><input type="radio" name="quiz" value="A"> ${q.options.A}</label><br>
+            <label><input type="radio" name="quiz" value="B"> ${q.options.B}</label><br>
+            <label><input type="radio" name="quiz" value="C"> ${q.options.C}</label><br>
+            <label><input type="radio" name="quiz" value="D"> ${q.options.D}</label><br>
+
+            <button onclick="submitQuiz()">Submit Answer</button>
+        </div>
+    `;
+}
+
+/* =========================
+   SUBMIT QUIZ (LOCK + NEXT)
+========================= */
+function submitQuiz(){
+
+    if(answered) return;
+
+    let selected = document.querySelector('input[name="quiz"]:checked');
+
+    if(!selected){
+        alert("Select an answer");
+        return;
+    }
+
+    answered = true;
+
+    let q = quizData[quizIndex];
+
+    if(selected.value === q.correct){
+        score++;
+    }
+
+    document.querySelectorAll('input[name="quiz"]').forEach(i=>{
+        i.disabled = true;
+    });
+
+    setTimeout(()=>{
+
+        quizIndex++;
+
+        if(quizIndex < quizData.length){
+            showQuestion();
+        } else {
+            showResult();
+        }
+
+    }, 800);
+}
+
+/* =========================
+   FINAL RESULT
+========================= */
+function showResult(){
+
+    let b = document.getElementById("assignList");
+
+    b.innerHTML = `
+        <div class="card">
+            <h2>🎉 Exam Completed</h2>
+            <p>Your Score: ${score} / ${quizData.length}</p>
+
+            <button onclick="restartQuiz()">Restart Exam</button>
+        </div>
+    `;
+}
+
+/* =========================
+   FIXED RESTART (IMPORTANT)
+========================= */
+function restartQuiz(){
+
+    quizIndex = 0;
+    score = 0;
+    answered = false;
+    quizData = [];
+
+    loadAssignments();
+}
+
+/* =========================
+   INIT
+========================= */
+loadVideos();
+loadNotes();
+loadAssignments();
+
+</script>
+
+</body>
+</html>

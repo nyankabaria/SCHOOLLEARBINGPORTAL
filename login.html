@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🎓 LMS Login</h1>
+
+    <div class="card">
+
+        <label>Username</label><br>
+        <input id="username"><br><br>
+
+        <label>Password</label><br>
+        <input id="password" type="password"><br><br>
+
+        <label>Role</label><br>
+        <select id="role">
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+            <option value="admin">Admin</option>
+        </select><br><br>
+
+        <button onclick="login()">Login</button>
+
+    </div>
+
+</div>
+
+<footer>© 2026 LMS Platform</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

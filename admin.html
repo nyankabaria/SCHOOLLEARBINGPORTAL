@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#f4f6f9;
+}
+
+nav{
+    background:#1e3a8a;
+    color:white;
+    padding:15px;
+    font-size:20px;
+}
+
+.container{
+    width:90%;
+    margin:auto;
+    margin-top:20px;
+}
+
+.section{
+    background:white;
+    padding:15px;
+    margin-bottom:20px;
+    border-radius:10px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+input, select{
+    width:100%;
+    padding:10px;
+    margin-top:8px;
+    margin-bottom:10px;
+    border:1px solid #ccc;
+    border-radius:6px;
+}
+
+button{
+    width:100%;
+    padding:10px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1e40af;
+}
+
+.item{
+    background:#f1f5f9;
+    padding:10px;
+    border-radius:6px;
+    margin-top:10px;
+}
+
+video{
+    width:100%;
+    border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<script src="app.js"></script>
+<script>checkLogin("admin");</script>
+
+<nav>
+🎓 ADMIN DASHBOARD
+</nav>
+
+<div class="container">
+
+<!-- CREATE USER -->
+<div class="section">
+<h3>Create User</h3>
+
+<input id="u" placeholder="username">
+<input id="p" placeholder="password">
+
+<select id="r">
+<option value="student">student</option>
+<option value="teacher">teacher</option>
+<option value="admin">admin</option>
+</select>
+
+<button onclick="createUser()">Create User</button>
+</div>
+
+<!-- VIDEO UPLOAD -->
+<div class="section">
+<h3>Upload Video</h3>
+
+<input id="videoTitle" placeholder="Video title">
+<input type="file" id="videoFile" accept="video/*">
+
+<button onclick="uploadVideo()">Upload Video</button>
+
+<div id="videoList"></div>
+</div>
+
+<!-- NOTE UPLOAD -->
+<div class="section">
+<h3>Upload Note</h3>
+
+<input id="noteTitle" placeholder="Note title">
+<input type="file" id="noteFile">
+
+<button onclick="uploadNote()">Upload Note</button>
+
+<div id="noteList"></div>
+</div>
+
+</div>
+
+<script>
+
+/* =====================
+CREATE USER (FIXED DUPLICATES)
+===================== */
+function createUser(){
+
+    let u = document.getElementById("u").value.trim();
+    let p = document.getElementById("p").value.trim();
+    let r = document.getElementById("r").value;
+
+    if(!u || !p){
+        alert("Fill all fields");
+        return;
+    }
+
+    let users = JSON.parse(localStorage.getItem("users")) || [];
+
+    let exists = users.find(x => x.username === u);
+
+    if(exists){
+        alert("User already exists");
+        return;
+    }
+
+    users.push({username:u,password:p,role:r});
+
+    localStorage.setItem("users", JSON.stringify(users));
+
+    alert("User created successfully");
+}
+
+/* =====================
+VIDEO UPLOAD (FIXED + SAFE)
+===================== */
+function uploadVideo(){
+
+    let title = document.getElementById("videoTitle").value.trim();
+    let file = document.getElementById("videoFile").files[0];
+
+    if(!title || !file){
+        alert("Fill all fields");
+        return;
+    }
+
+    let videoURL = URL.createObjectURL(file);
+
+    let videos = JSON.parse(localStorage.getItem("videos")) || [];
+
+    videos.push({
+        title: title,
+        file: videoURL
+    });
+
+    localStorage.setItem("videos", JSON.stringify(videos));
+
+    document.getElementById("videoTitle").value = "";
+    document.getElementById("videoFile").value = "";
+
+    loadVideos();
+}
+
+/* =====================
+NOTE UPLOAD (FIXED)
+===================== */
+function uploadNote(){
+
+    let title = document.getElementById("noteTitle").value.trim();
+    let file = document.getElementById("noteFile").files[0];
+
+    if(!title || !file){
+        alert("Fill all fields");
+        return;
+    }
+
+    let reader = new FileReader();
+
+    reader.onload = function(e){
+
+        let notes = JSON.parse(localStorage.getItem("notes")) || [];
+
+        notes.push({
+            title: title,
+            file: e.target.result,
+            name: file.name
+        });
+
+        localStorage.setItem("notes", JSON.stringify(notes));
+
+        document.getElementById("noteTitle").value = "";
+        document.getElementById("noteFile").value = "";
+
+        loadNotes();
+    };
+
+    reader.readAsDataURL(file);
+}
+
+/* =====================
+LOAD VIDEOS
+===================== */
+function loadVideos(){
+
+    let v = JSON.parse(localStorage.getItem("videos")) || [];
+    let box = document.getElementById("videoList");
+
+    box.innerHTML = "<h4>Uploaded Videos</h4>";
+
+    v.forEach(x=>{
+        box.innerHTML += `
+        <div class="item">
+            <h4>${x.title}</h4>
+            <video controls>
+                <source src="${x.file}">
+            </video>
+        </div>`;
+    });
+}
+
+/* =====================
+LOAD NOTES
+===================== */
+function loadNotes(){
+
+    let n = JSON.parse(localStorage.getItem("notes")) || [];
+    let box = document.getElementById("noteList");
+
+    box.innerHTML = "<h4>Uploaded Notes</h4>";
+
+    n.forEach(x=>{
+        box.innerHTML += `
+        <div class="item">
+            <h4>${x.title}</h4>
+            <a href="${x.file}" download="${x.name}">
+                Download File
+            </a>
+        </div>`;
+    });
+}
+
+/* INIT */
+loadVideos();
+loadNotes();
+
+</script>
+
+</body>
+</html>

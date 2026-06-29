@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Teacher Dashboard</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#f4f6f9;
+}
+
+nav{
+    background:#2563eb;
+    color:white;
+    padding:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.container{
+    width:90%;
+    margin:auto;
+    margin-top:20px;
+}
+
+.card{
+    background:white;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:10px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+input,select{
+    width:100%;
+    padding:10px;
+    margin-top:8px;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+
+button{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1e40af;
+}
+
+.mcq-box{
+    background:#eef2ff;
+    padding:10px;
+    border-radius:8px;
+    margin-top:10px;
+}
+</style>
+
+</head>
+
+<body>
+
+<script src="app.js"></script>
+<script>checkLogin("teacher");</script>
+
+<nav>
+<h2>📚 Teacher Dashboard</h2>
+<a href="#" onclick="logout()" style="color:white;">Logout</a>
+</nav>
+
+<div class="container">
+
+<!-- VIDEO UPLOAD -->
+<div class="card">
+<h3>📹 Upload Video</h3>
+
+<input id="videoTitle" placeholder="Video title">
+<input type="file" id="videoFile" accept="video/*">
+
+<button onclick="uploadVideo()">Upload Video</button>
+</div>
+
+<!-- NOTE UPLOAD -->
+<div class="card">
+<h3>📚 Upload Notes</h3>
+
+<input id="noteTitle" placeholder="Note title">
+<input type="file" id="noteFile" accept=".pdf,.doc,.docx,.png,.jpg">
+
+<button onclick="uploadNote()">Upload Note</button>
+</div>
+
+<!-- ASSIGNMENT -->
+<div class="card">
+<h3>📝 Create Assignment</h3>
+
+<input id="assignTitle" placeholder="Assignment title">
+
+<select id="assignType" onchange="toggleMCQ()">
+<option value="written">Written</option>
+<option value="mcq">MCQ</option>
+</select>
+
+<div id="mcqBox" class="mcq-box" style="display:none;">
+
+<h4>Question</h4>
+<input id="q" placeholder="Enter question">
+
+<h4>Options</h4>
+<input id="o1" placeholder="Option A">
+<input id="o2" placeholder="Option B">
+<input id="o3" placeholder="Option C">
+<input id="o4" placeholder="Option D">
+
+<h4>Correct Answer</h4>
+<select id="correct">
+<option value="A">A</option>
+<option value="B">B</option>
+<option value="C">C</option>
+<option value="D">D</option>
+</select>
+
+</div>
+
+<button onclick="createAssignment()">Post Assignment</button>
+</div>
+
+</div>
+
+<script>
+
+/* =====================
+TOGGLE MCQ
+===================== */
+function toggleMCQ(){
+    let type = document.getElementById("assignType").value;
+    document.getElementById("mcqBox").style.display =
+        type === "mcq" ? "block" : "none";
+}
+
+/* =====================
+UPLOAD VIDEO (FIXED)
+===================== */
+function uploadVideo(){
+
+    let title = document.getElementById("videoTitle").value.trim();
+    let file = document.getElementById("videoFile").files[0];
+
+    if(!title || !file){
+        alert("Fill all video fields");
+        return;
+    }
+
+    // FIX: proper video URL (works across dashboards)
+    let videoURL = URL.createObjectURL(file);
+
+    let videos = JSON.parse(localStorage.getItem("videos")) || [];
+
+    videos.push({
+        title: title,
+        file: videoURL
+    });
+
+    localStorage.setItem("videos", JSON.stringify(videos));
+
+    alert("Video uploaded successfully");
+
+    document.getElementById("videoTitle").value = "";
+    document.getElementById("videoFile").value = "";
+}
+
+/* =====================
+UPLOAD NOTE (SAFE)
+===================== */
+function uploadNote(){
+
+    let title = document.getElementById("noteTitle").value.trim();
+    let file = document.getElementById("noteFile").files[0];
+
+    if(!title || !file){
+        alert("Fill all note fields");
+        return;
+    }
+
+    let reader = new FileReader();
+
+    reader.onload = function(e){
+
+        let notes = JSON.parse(localStorage.getItem("notes")) || [];
+
+        notes.push({
+            title: title,
+            file: e.target.result,
+            name: file.name
+        });
+
+        localStorage.setItem("notes", JSON.stringify(notes));
+
+        alert("Note uploaded successfully");
+
+        document.getElementById("noteTitle").value = "";
+        document.getElementById("noteFile").value = "";
+    };
+
+    reader.readAsDataURL(file);
+}
+
+/* =====================
+CREATE ASSIGNMENT (MCQ + WRITTEN)
+===================== */
+function createAssignment(){
+
+    let title = document.getElementById("assignTitle").value.trim();
+    let type = document.getElementById("assignType").value;
+
+    if(!title){
+        alert("Enter assignment title");
+        return;
+    }
+
+    let assignments = JSON.parse(localStorage.getItem("assignments")) || [];
+
+    let assignment = {
+        title: title,
+        type: type
+    };
+
+    if(type === "mcq"){
+
+        let q = document.getElementById("q").value;
+        let o1 = document.getElementById("o1").value;
+        let o2 = document.getElementById("o2").value;
+        let o3 = document.getElementById("o3").value;
+        let o4 = document.getElementById("o4").value;
+        let correct = document.getElementById("correct").value;
+
+        if(!q || !o1 || !o2 || !o3 || !o4){
+            alert("Fill all MCQ fields");
+            return;
+        }
+
+        assignment.question = q;
+        assignment.options = {
+            A:o1,
+            B:o2,
+            C:o3,
+            D:o4
+        };
+        assignment.correct = correct;
+    }
+
+    assignments.push(assignment);
+
+    localStorage.setItem("assignments", JSON.stringify(assignments));
+
+    alert("Assignment posted successfully");
+
+    document.getElementById("assignTitle").value = "";
+}
+</script>
+
+</body>
+</html>
