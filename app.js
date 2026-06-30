@@ -1,236 +1,120 @@
+```javascript id="z3b17j"
+// =========================
+// FIREBASE IMPORTS
+// =========================
 
-// =====================
-// DEFAULT ADMIN ACCOUNT
-// =====================
-if(!localStorage.getItem("users")){
+import { initializeApp } from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
-    let defaultUsers = [
-        {
-            username:"admin",
-            password:"admin123",
-            role:"admin"
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs
+} from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// =========================
+// FIREBASE CONFIG
+// =========================
+
+const firebaseConfig = {
+
+    apiKey: "YOUR_API_KEY",
+
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+
+    projectId: "YOUR_PROJECT_ID",
+
+    storageBucket: "YOUR_PROJECT.appspot.com",
+
+    messagingSenderId: "YOUR_SENDER_ID",
+
+    appId: "YOUR_APP_ID"
+};
+
+// =========================
+// INITIALIZE FIREBASE
+// =========================
+
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+// =========================
+// LOGIN FUNCTION
+// =========================
+
+window.login = async function(){
+
+    let username =
+    document.getElementById("username").value;
+
+    let password =
+    document.getElementById("password").value;
+
+    const querySnapshot =
+    await getDocs(collection(db, "users"));
+
+    let found = false;
+
+    querySnapshot.forEach((doc) => {
+
+        let user = doc.data();
+
+        if(
+            user.username === username &&
+            user.password === password
+        ){
+
+            found = true;
+
+            localStorage.setItem(
+                "currentUser",
+                JSON.stringify(user)
+            );
+
+            if(user.role === "admin"){
+                window.location.href = "admin.html";
+            }
+
+            else if(user.role === "teacher"){
+                window.location.href = "teacher.html";
+            }
+
+            else if(user.role === "student"){
+                window.location.href = "student.html";
+            }
         }
-    ];
-
-    localStorage.setItem("users", JSON.stringify(defaultUsers));
-}
-
-// =====================
-// CHECK LOGIN
-// =====================
-function checkLogin(role){
-
-    let user = JSON.parse(localStorage.getItem("currentUser"));
-
-    if(!user){
-        window.location.href = "login.html";
-        return;
-    }
-
-    if(user.role !== role && user.role !== "admin"){
-        alert("Unauthorized Access");
-        window.location.href = "login.html";
-    }
-}
-
-// =====================
-// LOGOUT
-// =====================
-function logout(){
-
-    localStorage.removeItem("currentUser");
-    window.location.href = "login.html";
-}
-
-// =====================
-// LOGIN
-// =====================
-function login(){
-
-    let u = document.getElementById("username").value.trim();
-    let p = document.getElementById("password").value.trim();
-    let r = document.getElementById("role").value;
-
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-
-    let found = users.find(x =>
-        x.username === u &&
-        x.password === p &&
-        x.role === r
-    );
+    });
 
     if(!found){
         alert("Invalid login details");
-        return;
     }
+};
 
-    localStorage.setItem("currentUser", JSON.stringify(found));
+// =========================
+// ADD USER
+// =========================
 
-    window.location.href = found.role + ".html";
-}
+window.addUser = async function(){
 
-// =====================
-// CREATE USER
-// =====================
-function createUser(){
+    let username =
+    document.getElementById("newUsername").value;
 
-    let u = document.getElementById("u").value.trim();
-    let p = document.getElementById("p").value.trim();
-    let r = document.getElementById("r").value;
+    let password =
+    document.getElementById("newPassword").value;
 
-    if(!u || !p){
-        alert("Fill all fields");
-        return;
-    }
+    let role =
+    document.getElementById("newRole").value;
 
-    let users = JSON.parse(localStorage.getItem("users")) || [];
+    await addDoc(collection(db, "users"), {
 
-    let exists = users.find(x => x.username === u);
-
-    if(exists){
-        alert("User already exists");
-        return;
-    }
-
-    users.push({
-        username:u,
-        password:p,
-        role:r
+        username,
+        password,
+        role
     });
 
-    localStorage.setItem("users", JSON.stringify(users));
-
-    alert("User created successfully");
-
-    document.getElementById("u").value = "";
-    document.getElementById("p").value = "";
-}
-
-// =====================
-// UPLOAD VIDEO
-// =====================
-function uploadVideo(){
-
-    let title = document.getElementById("videoTitle").value.trim();
-    let file = document.getElementById("videoFile").files[0];
-
-    if(!title || !file){
-        alert("Fill all fields");
-        return;
-    }
-
-    let reader = new FileReader();
-
-    reader.onload = function(e){
-
-        let videos = JSON.parse(localStorage.getItem("videos")) || [];
-
-        videos.push({
-            title:title,
-            file:e.target.result
-        });
-
-        localStorage.setItem("videos", JSON.stringify(videos));
-
-        alert("Video uploaded");
-
-        document.getElementById("videoTitle").value = "";
-        document.getElementById("videoFile").value = "";
-
-        loadVideos();
-    };
-
-    reader.readAsDataURL(file);
-}
-
-// =====================
-// LOAD VIDEOS
-// =====================
-function loadVideos(){
-
-    let videos = JSON.parse(localStorage.getItem("videos")) || [];
-
-    let box = document.getElementById("videoList");
-
-    if(!box) return;
-
-    box.innerHTML = "";
-
-    videos.forEach(v => {
-
-        box.innerHTML += `
-        <div class="item">
-            <h4>${v.title}</h4>
-
-            <video controls>
-                <source src="${v.file}">
-            </video>
-        </div>
-        `;
-    });
-}
-
-// =====================
-// UPLOAD NOTES
-// =====================
-function uploadNote(){
-
-    let title = document.getElementById("noteTitle").value.trim();
-    let file = document.getElementById("noteFile").files[0];
-
-    if(!title || !file){
-        alert("Fill all fields");
-        return;
-    }
-
-    let reader = new FileReader();
-
-    reader.onload = function(e){
-
-        let notes = JSON.parse(localStorage.getItem("notes")) || [];
-
-        notes.push({
-            title:title,
-            file:e.target.result,
-            name:file.name
-        });
-
-        localStorage.setItem("notes", JSON.stringify(notes));
-
-        alert("Note uploaded");
-
-        document.getElementById("noteTitle").value = "";
-        document.getElementById("noteFile").value = "";
-
-        loadNotes();
-    };
-
-    reader.readAsDataURL(file);
-}
-
-// =====================
-// LOAD NOTES
-// =====================
-function loadNotes(){
-
-    let notes = JSON.parse(localStorage.getItem("notes")) || [];
-
-    let box = document.getElementById("noteList");
-
-    if(!box) return;
-
-    box.innerHTML = "";
-
-    notes.forEach(n => {
-
-        box.innerHTML += `
-        <div class="item">
-            <h4>${n.title}</h4>
-
-            <a href="${n.file}" download="${n.name}">
-                Download File
-            </a>
-        </div>
-        `;
-    });
-}
+    alert("User added successfully");
+};
+```
